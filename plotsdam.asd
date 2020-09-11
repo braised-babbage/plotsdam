@@ -6,4 +6,4 @@
   :pathname "src/"
   :components ((:file "package")
                (:file "plotsdam"))
-  :depends-on (:cl-json :hunchentoot))
+  :depends-on (:alexandria :cl-json :hunchentoot))

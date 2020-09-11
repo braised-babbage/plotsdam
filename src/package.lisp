@@ -2,6 +2,8 @@
   (:use #:cl)
   (:export
    #:plot
+   #:val
+   
    #:*plotting-mode*
    #:*display-command-name*
    

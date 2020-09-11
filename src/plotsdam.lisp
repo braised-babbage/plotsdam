@@ -3,7 +3,7 @@
 (deftype plotting-mode ()
   '(member :immediate :http))
 
-(defparameter *plotting-mode* ':immediate
+(defparameter *plotting-mode* ':http
   "The current plotting mode.")
 
 (defun plistp (obj &key keywords-only)
@@ -21,16 +21,30 @@
   ;; this is mainly so that we can handle plists so that
   ;; they generate objects
   (cond ((stringp obj) obj)
+	((and (listp obj)
+	      (eq 'val (first obj)))
+	 (unless (endp (third obj))
+	   (error "VAL expected only a single expression."))
+	 (second obj))
 	((plistp obj :keywords-only t)
-	 (let ((tbl (make-hash-table)))
-	   (loop :for (key val) :on obj :by #'cddr
-		 :do (setf (gethash key tbl)
-			   (translate val))
-		 :finally (return tbl))))
+	 `(alexandria:plist-hash-table
+	   (list .
+	    ,(loop :for (key val) :on obj :by #'cddr
+		   :append (list key (translate val))))))
 	((or (listp obj) (vectorp obj))
-	 (map 'list #'translate obj))
+	 `(list . ,(map 'list #'translate obj)))
 	(t obj)))
 
+
+(defmethod cl-json:encode-json ((obj (eql ':false)) &optional stream)
+  "Encode :FALSE as false."
+  (princ "false" stream)
+  nil)
+
+(defmethod cl-json:encode-json ((obj (eql ':true)) &optional stream)
+  "Encode :TRUE as true."
+  (princ "true" stream)
+  nil)
 
 (defmacro vega-lite (data &body body)
   "Generate the serialized JSON for a Vega Lite plot of DATA."
@@ -39,9 +53,9 @@
   (let ((out (gensym)))
     `(with-output-to-string (,out)    
        (cl-json:encode-json
-	(translate
-	 (append (list :data (list :values ,data))
-		 ',body))
+	,(translate
+	  (append (list :data (list :values data))
+		  body))
 	,out))))
 
 
@@ -136,6 +150,8 @@
        (:immediate ,plot-op)
        (:http
 	(progn
+	  (when (null *acceptor*)
+	    (start-http-plotter))
 	  (unless *acceptor*
 	    (error "Unable to plot in HTTP mode: plot server not started. Try START-HTTP-PLOTTER."))
 	  (let ((,id-var (add-plot ,plot-op)))
