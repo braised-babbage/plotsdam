@@ -1,4 +1,4 @@
-# plotsdam: Interactive plotting with Vega Lite
+# Plotsdam: Interactive plotting with Vega Lite
 
 Plotsdam is a thin veneer over [Vega Lite](https://vega.github.io/vega-lite/). 
 

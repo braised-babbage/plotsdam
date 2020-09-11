@@ -21,6 +21,10 @@
   ;; this is mainly so that we can handle plists so that
   ;; they generate objects
   (cond ((stringp obj) obj)
+	((keywordp obj)
+	 (if (every #'upper-case-p (symbol-name obj))
+	     (string-downcase (symbol-name obj))
+	     (symbol-name obj)))
 	((and (listp obj)
 	      (eq 'val (first obj)))
 	 (unless (endp (third obj))
@@ -30,7 +34,7 @@
 	 `(alexandria:plist-hash-table
 	   (list .
 	    ,(loop :for (key val) :on obj :by #'cddr
-		   :append (list key (translate val))))))
+		   :append (list (translate key) (translate val))))))
 	((or (listp obj) (vectorp obj))
 	 `(list . ,(map 'list #'translate obj)))
 	(t obj)))
@@ -142,6 +146,7 @@
 
 
 (defmacro plot ((data &key mode) &body body)
+  "Plot DATA according to the Vega Lite directives indicated in BODY."
   (let ((id-var (gensym))
 	(plot-op `(vega-lite ,data ,@body)))
     (when mode
