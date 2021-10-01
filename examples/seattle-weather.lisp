@@ -22,7 +22,7 @@
   "A histogram of precipitation amounts."
   (plot (seattle-weather-data)
     :mark :bar
-    :encoding (:x (:bin :true :field :precipitation)
+    :encoding (:x (:bin true :field :precipitation)
 	       :y (:aggregate :count))))
 
 (defun monthly-change ()
