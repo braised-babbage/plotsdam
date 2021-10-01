@@ -16,11 +16,31 @@
 	       :do (return nil)
 	     :finally (return t))))
 
+(defun json-keyword-p (obj)
+  "Return true if obj is a symbol with print name false, true, or null
+   and NOT in the Lisp keyword package. Otherwise, return false."
+  (and (symbolp obj)
+       (not (keywordp obj))
+       (member (symbol-name obj) 
+               '(false true null)
+               :test #'string-equal)))
+
+(defun lisp-keywordify (symbol)
+  "Return the result of taking the print name of symbol and interning
+   it in the Lisp keyword package."
+  (intern (symbol-name symbol) :keyword))
+               
+
 (defun translate (obj)
   "Translate OBJ to a format suitable for JSON serialization."
   ;; this is mainly so that we can handle plists so that
-  ;; they generate objects
+  ;; they generate objects, and also we turn false/true/null
+  ;; (as symbols in any package but keyword) into keyword
+  ;; equivalents, handled by our custom cl-json:encode-json
+  ;; methods (below)
   (cond ((stringp obj) obj)
+        ((json-keyword-p obj)
+         (lisp-keywordify obj))
 	((keywordp obj)
 	 (if (every #'upper-case-p (symbol-name obj))
 	     (string-downcase (symbol-name obj))
@@ -48,6 +68,11 @@
 (defmethod cl-json:encode-json ((obj (eql ':true)) &optional stream)
   "Encode :TRUE as true."
   (princ "true" stream)
+  nil)
+
+(defmethod cl-json:encode-json ((obj (eql ':null)) &optional stream)
+  "Encode :NULL as null."
+  (princ "null" stream)
   nil)
 
 (defmacro vega-lite (data &body body)
