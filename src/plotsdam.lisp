@@ -92,8 +92,31 @@
 	(make-hash-table :test 'equalp)))
 
 
+(defun make-javascript-literal (plot-string)
+  "Create a Lisp string that represents PLOT-STRING as a Javascript
+   string literal. Specifically, the resulting string starts and ends
+   with single-quote (') surrounding the characters of PLOT-STRING
+   such that any backslash (\\) or single-quote character is escaped
+   by the backslash character. For example, if PLOT-STRING contains
+   the sequence
+
+     Abc\\def 'ghi'
+
+   this returns a Lisp string containing the sequence
+
+     'Abc\\\\def \\'ghi\\''"
+  (with-output-to-string (s)
+    (write-char #\' s)
+    (loop :for c :across plot-string
+          :do (case c
+                ((#\' #\\) (write-char #\\ s)))
+              (write-char c s))
+    (write-char #\' s)))
+
 (defun html-template (plot-string &optional stream)
-  (format stream "<!DOCTYPE html>
+  (let ((plot-string-as-javascript-string-literal
+          (make-javascript-literal plot-string)))
+    (format stream "<!DOCTYPE html>
 <html>
   <head>
     <title>Vega-Lite Plot</title>
@@ -105,12 +128,13 @@
     <div id=\"vis\"></div>
 
     <script type=\"text/javascript\">
-      var rawSpec = '~A';
+      var rawSpec = ~A;
       var spec = JSON.parse(rawSpec);
       vegaEmbed('#vis', spec);
     </script>
   </body>
-</html>" plot-string))
+</html>" 
+            plot-string-as-javascript-string-literal)))
 
 
 
